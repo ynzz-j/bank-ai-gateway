@@ -1,0 +1,54 @@
+# 生产环境配置
+# 所有敏感配置必须通过环境变量注入
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bank_ai_gateway}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+
+# JWT - 必须通过环境变量注入
+jwt:
+  secret: ${JWT_SECRET}
+
+# KMS - 生产环境建议使用Vault
+kms:
+  type: ${KMS_TYPE:vault}
+  vault:
+    addr: ${VAULT_ADDR}
+    token: ${VAULT_TOKEN}
+
+# 熔断配置 - 生产环境更保守
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        failure-rate-threshold: 40
+        slow-call-rate-threshold: 70
+        wait-duration-in-open-state: 120s
+
+# 日志级别 - 生产环境减少日志
+logging:
+  level:
+    root: WARN
+    com.bank.ai.gateway: INFO
+    org.springframework.web: WARN
+
+# Actuator - 生产环境最小暴露
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

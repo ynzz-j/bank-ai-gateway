@@ -1,0 +1,196 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: bank-ai-gateway
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # 数据源配置（占位，具体环境覆盖）
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bank_ai_gateway
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      pool-name: bank-gateway-hikari
+
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 3000ms
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: status
+      logic-delete-value: 0
+      logic-not-delete-value: 1
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:changeme-this-must-be-at-least-256-bits-long-for-hs256}
+  access-token-validity: 2h
+  refresh-token-validity: 7d
+
+# 密码策略
+password:
+  bcrypt-cost: 12
+  min-length: 8
+  require-upper: true
+  require-lower: true
+  require-digit: true
+  require-special: true
+  max-login-fail: 5
+  lock-duration: 30m
+
+# 限流配置
+rate-limit:
+  global:
+    max-rpm: 1000
+  api-key:
+    default-rpm: 60
+    default-tpm: 100000
+  model:
+    overrides:
+      gpt-4:
+        rpm: 10
+        tpm: 10000
+      gpt-4o:
+        rpm: 30
+        tpm: 60000
+      gpt-3.5-turbo:
+        rpm: 120
+        tpm: 200000
+      claude-3-opus:
+        rpm: 10
+        tpm: 10000
+      claude-3-sonnet:
+        rpm: 30
+        tpm: 60000
+
+# 熔断/重试配置
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - java.net.SocketTimeoutException
+          - java.net.ConnectException
+    instances:
+      channel-retry:
+        base-config: default
+
+  circuitbreaker:
+    configs:
+      default:
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 80
+        slow-call-duration-threshold: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+    instances:
+      channel-circuit:
+        base-config: default
+
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 30s
+    instances:
+      channel-timeout:
+        base-config: default
+
+# 合规配置
+compliance:
+  keyword:
+    source: DATABASE
+    reload-interval: 300s
+    combo-rule-enabled: true
+  disclaimer:
+    enabled: true
+    template: "【风险提示】本回复由人工智能生成，仅供参考，不构成任何投资建议或专业意见。银行不对AI生成内容的准确性、完整性和可靠性承担责任。如需专业服务，请咨询相关专业人士。"
+  mask:
+    phone: true
+    id-card: true
+    bank-card: true
+    email: true
+
+# KMS配置
+kms:
+  type: ${KMS_TYPE:local}
+  local:
+    key: ${KMS_LOCAL_KEY:0123456789abcdef0123456789abcdef}
+  vault:
+    addr: ${VAULT_ADDR:}
+    token: ${VAULT_TOKEN:}
+
+# 渠道健康检查
+channel:
+  health-check:
+    enabled: true
+    interval: 5m
+    timeout: 10s
+
+# 审计日志
+audit:
+  enabled: true
+  log-request-body: true
+  log-response-body: false
+  max-body-length: 1024
+
+# 调用日志分区管理
+call-log:
+  partition:
+    auto-create: true
+    pre-create-months: 3
+
+# 日志级别
+logging:
+  level:
+    root: INFO
+    com.bank.ai.gateway: DEBUG
+    org.springframework.web: INFO
+    org.springframework.data.redis: WARN
