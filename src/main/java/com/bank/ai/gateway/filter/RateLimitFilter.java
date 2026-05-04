@@ -1,7 +1,7 @@
 package com.bank.ai.gateway.filter;
 
 import com.bank.ai.gateway.common.ErrorCode;
-import com.bank.ai.gateway.model.entity.apikey.ApiKeyEntity;
+import com.bank.ai.gateway.model.entity.apikey.ApiKey;
 import com.bank.ai.gateway.repository.apikey.ApiKeyMapper;
 import com.bank.ai.gateway.service.ratelimit.RateLimitService;
 import lombok.RequiredArgsConstructor;
@@ -90,11 +90,11 @@ public class RateLimitFilter implements WebFilter {
     private Mono<Boolean> checkApiKeyRateLimit(String apiKeyPrefix) {
         return Mono.fromCallable(() -> {
             // selectByPrefix 返回 List
-            List<ApiKeyEntity> keys = apiKeyMapper.selectByPrefix(apiKeyPrefix);
+            List<ApiKey> keys = apiKeyMapper.selectByPrefix(apiKeyPrefix);
             if (keys == null || keys.isEmpty()) {
                 return true; // 找不到 API Key，跳过限流
             }
-            ApiKeyEntity apiKey = keys.get(0);
+            ApiKey apiKey = keys.get(0);
 
             // 使用 quotaRpm（每分钟请求数）
             Integer quotaRpm = apiKey.getQuotaRpm();

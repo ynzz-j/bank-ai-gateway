@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("rate_limit_config")
-public class RateLimitConfigEntity {
+public class RateLimitConfig {
 
     /**
      * 主键 ID

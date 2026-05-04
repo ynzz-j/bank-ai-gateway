@@ -32,7 +32,7 @@ import java.util.UUID;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class QwenAdapter implements ModelAdapter {
+public class TongyiAdapter implements ModelAdapter {
 
     private final ObjectMapper objectMapper;
     private final WebClient.Builder webClientBuilder;

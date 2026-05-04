@@ -7,7 +7,7 @@ import com.bank.ai.gateway.model.dto.request.apikey.RotateApiKeyRequest;
 import com.bank.ai.gateway.model.dto.request.apikey.UpdateApiKeyRequest;
 import com.bank.ai.gateway.model.dto.response.apikey.ApiKeyResponse;
 import com.bank.ai.gateway.model.dto.response.apikey.CreateApiKeyResponse;
-import com.bank.ai.gateway.model.entity.apikey.ApiKeyEntity;
+import com.bank.ai.gateway.model.entity.apikey.ApiKey;
 import com.bank.ai.gateway.repository.apikey.ApiKeyMapper;
 import com.bank.ai.gateway.service.apikey.impl.ApiKeyServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -50,13 +50,13 @@ class ApiKeyServiceTest {
     private ApiKeyServiceImpl apiKeyService;
 
     private Long userId;
-    private ApiKeyEntity testEntity;
+    private ApiKey testEntity;
 
     @BeforeEach
     void setUp() {
         userId = 1L;
 
-        testEntity = new ApiKeyEntity();
+        testEntity = new ApiKey();
         testEntity.setId(100L);
         testEntity.setUserId(userId);
         testEntity.setKeyPrefix("bgk_");
@@ -81,8 +81,8 @@ class ApiKeyServiceTest {
             CreateApiKeyRequest request = new CreateApiKeyRequest();
             request.setName("My API Key");
 
-            when(apiKeyMapper.insert(any(ApiKeyEntity.class))).thenAnswer(invocation -> {
-                ApiKeyEntity e = invocation.getArgument(0);
+            when(apiKeyMapper.insert(any(ApiKey.class))).thenAnswer(invocation -> {
+                ApiKey e = invocation.getArgument(0);
                 e.setId(100L);
                 e.setCreatedAt(LocalDateTime.now());
                 return 1;
@@ -99,7 +99,7 @@ class ApiKeyServiceTest {
             assertEquals("My API Key", response.getName());
             assertEquals(60, response.getQuotaRpm());
             assertEquals(100000, response.getQuotaTpm());
-            verify(apiKeyMapper).insert(any(ApiKeyEntity.class));
+            verify(apiKeyMapper).insert(any(ApiKey.class));
         }
 
         @Test
@@ -113,8 +113,8 @@ class ApiKeyServiceTest {
             request.setQuotaTotal(1000000L);
             request.setExpiresAt("2026-12-31 23:59:59");
 
-            when(apiKeyMapper.insert(any(ApiKeyEntity.class))).thenAnswer(invocation -> {
-                ApiKeyEntity e = invocation.getArgument(0);
+            when(apiKeyMapper.insert(any(ApiKey.class))).thenAnswer(invocation -> {
+                ApiKey e = invocation.getArgument(0);
                 e.setId(101L);
                 e.setCreatedAt(LocalDateTime.now());
                 return 1;
@@ -176,7 +176,7 @@ class ApiKeyServiceTest {
             when(apiKeyMapper.selectByPrefixAndHash(eq("bgk_"), any())).thenReturn(testEntity);
 
             // Act
-            ApiKeyEntity result = apiKeyService.validate(apiKey);
+            ApiKey result = apiKeyService.validate(apiKey);
 
             // Assert
             assertNotNull(result);
@@ -187,7 +187,7 @@ class ApiKeyServiceTest {
         @DisplayName("验证失败 - Key为空")
         void validate_nullKey_returnsNull() {
             // Act
-            ApiKeyEntity result = apiKeyService.validate(null);
+            ApiKey result = apiKeyService.validate(null);
 
             // Assert
             assertNull(result);
@@ -197,7 +197,7 @@ class ApiKeyServiceTest {
         @DisplayName("验证失败 - Key过短")
         void validate_shortKey_returnsNull() {
             // Act
-            ApiKeyEntity result = apiKeyService.validate("bgk");
+            ApiKey result = apiKeyService.validate("bgk");
 
             // Assert
             assertNull(result);
@@ -211,7 +211,7 @@ class ApiKeyServiceTest {
             when(apiKeyMapper.selectByPrefixAndHash(eq("bgk_"), any())).thenReturn(null);
 
             // Act
-            ApiKeyEntity result = apiKeyService.validate(apiKey);
+            ApiKey result = apiKeyService.validate(apiKey);
 
             // Assert
             assertNull(result);
@@ -266,13 +266,13 @@ class ApiKeyServiceTest {
         void disable_success() {
             // Arrange
             when(apiKeyMapper.selectById(100L)).thenReturn(testEntity);
-            when(apiKeyMapper.updateById(any(ApiKeyEntity.class))).thenReturn(1);
+            when(apiKeyMapper.updateById(any(ApiKey.class))).thenReturn(1);
 
             // Act
             apiKeyService.disable(userId, 100L);
 
             // Assert
-            verify(apiKeyMapper).updateById(any(ApiKeyEntity.class));
+            verify(apiKeyMapper).updateById(any(ApiKey.class));
         }
 
         @Test
@@ -281,13 +281,13 @@ class ApiKeyServiceTest {
             // Arrange
             testEntity.setStatus(0);
             when(apiKeyMapper.selectById(100L)).thenReturn(testEntity);
-            when(apiKeyMapper.updateById(any(ApiKeyEntity.class))).thenReturn(1);
+            when(apiKeyMapper.updateById(any(ApiKey.class))).thenReturn(1);
 
             // Act
             apiKeyService.enable(userId, 100L);
 
             // Assert
-            verify(apiKeyMapper).updateById(any(ApiKeyEntity.class));
+            verify(apiKeyMapper).updateById(any(ApiKey.class));
         }
     }
 
@@ -331,7 +331,7 @@ class ApiKeyServiceTest {
         void update_success() {
             // Arrange
             when(apiKeyMapper.selectById(100L)).thenReturn(testEntity);
-            when(apiKeyMapper.updateById(any(ApiKeyEntity.class))).thenReturn(1);
+            when(apiKeyMapper.updateById(any(ApiKey.class))).thenReturn(1);
 
             UpdateApiKeyRequest request = new UpdateApiKeyRequest();
             request.setName("Updated Name");
@@ -342,7 +342,7 @@ class ApiKeyServiceTest {
 
             // Assert
             assertEquals("Updated Name", response.getName());
-            verify(apiKeyMapper).updateById(any(ApiKeyEntity.class));
+            verify(apiKeyMapper).updateById(any(ApiKey.class));
         }
     }
 
@@ -355,9 +355,9 @@ class ApiKeyServiceTest {
         void rotate_success() {
             // Arrange
             when(apiKeyMapper.selectById(100L)).thenReturn(testEntity);
-            when(apiKeyMapper.updateById(any(ApiKeyEntity.class))).thenReturn(1);
-            when(apiKeyMapper.insert(any(ApiKeyEntity.class))).thenAnswer(invocation -> {
-                ApiKeyEntity e = invocation.getArgument(0);
+            when(apiKeyMapper.updateById(any(ApiKey.class))).thenReturn(1);
+            when(apiKeyMapper.insert(any(ApiKey.class))).thenAnswer(invocation -> {
+                ApiKey e = invocation.getArgument(0);
                 e.setId(101L);
                 e.setCreatedAt(LocalDateTime.now());
                 return 1;
@@ -371,8 +371,8 @@ class ApiKeyServiceTest {
             // Assert
             assertNotNull(response);
             assertTrue(response.getApiKey().startsWith("bgk_"));
-            verify(apiKeyMapper).updateById(any(ApiKeyEntity.class)); // 标记旧Key
-            verify(apiKeyMapper).insert(any(ApiKeyEntity.class)); // 创建新Key
+            verify(apiKeyMapper).updateById(any(ApiKey.class)); // 标记旧Key
+            verify(apiKeyMapper).insert(any(ApiKey.class)); // 创建新Key
         }
     }
 
@@ -395,13 +395,13 @@ class ApiKeyServiceTest {
         void consumeQuota_success() {
             // Arrange
             when(apiKeyMapper.selectById(100L)).thenReturn(testEntity);
-            when(apiKeyMapper.updateById(any(ApiKeyEntity.class))).thenReturn(1);
+            when(apiKeyMapper.updateById(any(ApiKey.class))).thenReturn(1);
 
             // Act
             apiKeyService.consumeQuota(100L, 500);
 
             // Assert
-            verify(apiKeyMapper).updateById(any(ApiKeyEntity.class));
+            verify(apiKeyMapper).updateById(any(ApiKey.class));
         }
     }
 }

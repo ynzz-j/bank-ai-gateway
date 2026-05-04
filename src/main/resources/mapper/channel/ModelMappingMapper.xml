@@ -3,7 +3,7 @@
 <mapper namespace="com.bank.ai.gateway.repository.channel.ModelMappingMapper">
 
     <!-- ResultMap -->
-    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.channel.ModelMappingEntity">
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.channel.ModelMapping">
         <id column="id" property="id"/>
         <result column="unified_model" property="unifiedModel"/>
         <result column="provider" property="provider"/>

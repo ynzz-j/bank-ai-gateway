@@ -15,7 +15,7 @@ import java.util.List;
  */
 @Data
 @TableName("channels")
-public class ChannelEntity {
+public class Channel {
 
     /**
      * 渠道状态枚举

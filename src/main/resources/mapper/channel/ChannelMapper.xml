@@ -3,7 +3,7 @@
 <mapper namespace="com.bank.ai.gateway.repository.channel.ChannelMapper">
 
     <!-- ResultMap -->
-    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.channel.ChannelEntity">
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.channel.Channel">
         <id column="id" property="id"/>
         <result column="provider" property="provider"/>
         <result column="name" property="name"/>

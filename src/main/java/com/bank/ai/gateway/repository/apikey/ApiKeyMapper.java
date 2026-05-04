@@ -1,7 +1,7 @@
 package com.bank.ai.gateway.repository.apikey;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.bank.ai.gateway.model.entity.apikey.ApiKeyEntity;
+import com.bank.ai.gateway.model.entity.apikey.ApiKey;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -9,16 +9,16 @@ import org.apache.ibatis.annotations.Param;
  *
  * @since 1.0.0
  */
-public interface ApiKeyMapper extends BaseMapper<ApiKeyEntity> {
+public interface ApiKeyMapper extends BaseMapper<ApiKey> {
 
     /**
      * 按前缀+哈希查询有效Key
      */
-    ApiKeyEntity selectByPrefixAndHash(@Param("keyPrefix") String keyPrefix,
+    ApiKey selectByPrefixAndHash(@Param("keyPrefix") String keyPrefix,
                                        @Param("keyHash") String keyHash);
 
     /**
      * 按前缀查询所有非轮换状态的Key
      */
-    java.util.List<ApiKeyEntity> selectByPrefix(@Param("keyPrefix") String keyPrefix);
+    java.util.List<ApiKey> selectByPrefix(@Param("keyPrefix") String keyPrefix);
 }

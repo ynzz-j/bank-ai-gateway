@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("model_mapping")
-public class ModelMappingEntity {
+public class ModelMapping {
 
     /**
      * 主键 ID

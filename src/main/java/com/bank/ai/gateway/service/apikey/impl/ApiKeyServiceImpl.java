@@ -7,7 +7,7 @@ import com.bank.ai.gateway.model.dto.request.apikey.RotateApiKeyRequest;
 import com.bank.ai.gateway.model.dto.request.apikey.UpdateApiKeyRequest;
 import com.bank.ai.gateway.model.dto.response.apikey.ApiKeyResponse;
 import com.bank.ai.gateway.model.dto.response.apikey.CreateApiKeyResponse;
-import com.bank.ai.gateway.model.entity.apikey.ApiKeyEntity;
+import com.bank.ai.gateway.model.entity.apikey.ApiKey;
 import com.bank.ai.gateway.repository.apikey.ApiKeyMapper;
 import com.bank.ai.gateway.service.apikey.ApiKeyService;
 import lombok.extern.slf4j.Slf4j;
@@ -102,7 +102,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         String hash = sha256(fullKey);
 
         // 构建实体
-        ApiKeyEntity entity = new ApiKeyEntity();
+        ApiKey entity = new ApiKey();
         entity.setKeyPrefix(prefix);
         entity.setKeyHash(hash);
         entity.setUserId(userId);
@@ -139,15 +139,15 @@ public class ApiKeyServiceImpl implements ApiKeyService {
 
     @Override
     public List<ApiKeyResponse> listByUser(Long userId) {
-        List<ApiKeyEntity> entities = apiKeyMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ApiKeyEntity>()
-                        .eq(ApiKeyEntity::getUserId, userId)
-                        .ne(ApiKeyEntity::getStatus, 2) // 排除已轮换
-                        .orderByDesc(ApiKeyEntity::getCreatedAt)
+        List<ApiKey> entities = apiKeyMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ApiKey>()
+                        .eq(ApiKey::getUserId, userId)
+                        .ne(ApiKey::getStatus, 2) // 排除已轮换
+                        .orderByDesc(ApiKey::getCreatedAt)
         );
 
         List<ApiKeyResponse> result = new ArrayList<>();
-        for (ApiKeyEntity e : entities) {
+        for (ApiKey e : entities) {
             result.add(toResponse(e));
         }
         return result;
@@ -156,7 +156,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ApiKeyResponse update(Long userId, Long keyId, UpdateApiKeyRequest request) {
-        ApiKeyEntity entity = getAndValidateOwnership(userId, keyId);
+        ApiKey entity = getAndValidateOwnership(userId, keyId);
 
         if (request.getName() != null) entity.setName(request.getName());
         if (request.getQuotaRpm() != null) entity.setQuotaRpm(request.getQuotaRpm());
@@ -174,7 +174,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void delete(Long userId, Long keyId) {
-        ApiKeyEntity entity = getAndValidateOwnership(userId, keyId);
+        ApiKey entity = getAndValidateOwnership(userId, keyId);
         // 物理删除（也可以使用逻辑删除，这里用物理删除）
         apiKeyMapper.deleteById(keyId);
         log.info("API Key deleted: id={}, prefix={}", keyId, entity.getKeyPrefix());
@@ -183,7 +183,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void disable(Long userId, Long keyId) {
-        ApiKeyEntity entity = getAndValidateOwnership(userId, keyId);
+        ApiKey entity = getAndValidateOwnership(userId, keyId);
         entity.setStatus(0);
         apiKeyMapper.updateById(entity);
         log.info("API Key disabled: id={}, prefix={}", keyId, entity.getKeyPrefix());
@@ -192,7 +192,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void enable(Long userId, Long keyId) {
-        ApiKeyEntity entity = getAndValidateOwnership(userId, keyId);
+        ApiKey entity = getAndValidateOwnership(userId, keyId);
         entity.setStatus(1);
         apiKeyMapper.updateById(entity);
         log.info("API Key enabled: id={}, prefix={}", keyId, entity.getKeyPrefix());
@@ -201,7 +201,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public CreateApiKeyResponse rotate(Long userId, Long keyId, RotateApiKeyRequest request) {
-        ApiKeyEntity oldKey = getAndValidateOwnership(userId, keyId);
+        ApiKey oldKey = getAndValidateOwnership(userId, keyId);
 
         // 标记旧Key为已轮换
         oldKey.setStatus(2);
@@ -220,12 +220,12 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     }
 
     @Override
-    public ApiKeyEntity validate(String apiKey) {
+    public ApiKey validate(String apiKey) {
         String prefix = extractPrefix(apiKey);
         if (prefix == null) return null;
 
         String hash = sha256(apiKey);
-        ApiKeyEntity entity = apiKeyMapper.selectByPrefixAndHash(prefix, hash);
+        ApiKey entity = apiKeyMapper.selectByPrefixAndHash(prefix, hash);
 
         if (entity == null) return null;
 
@@ -256,7 +256,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     public void consumeQuota(Long keyId, int tokens) {
         // TODO: 使用Redis原子操作扣减配额
         // 暂时只更新数据库已用配额
-        ApiKeyEntity entity = apiKeyMapper.selectById(keyId);
+        ApiKey entity = apiKeyMapper.selectById(keyId);
         if (entity != null) {
             entity.setUsedQuota(entity.getUsedQuota() + tokens);
             apiKeyMapper.updateById(entity);
@@ -268,8 +268,8 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     /**
      * 验证Key归属权
      */
-    private ApiKeyEntity getAndValidateOwnership(Long userId, Long keyId) {
-        ApiKeyEntity entity = apiKeyMapper.selectById(keyId);
+    private ApiKey getAndValidateOwnership(Long userId, Long keyId) {
+        ApiKey entity = apiKeyMapper.selectById(keyId);
         if (entity == null) {
             throw new BizException(ErrorCode.API_KEY_NOT_FOUND);
         }
@@ -282,7 +282,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     /**
      * 实体转响应
      */
-    private ApiKeyResponse toResponse(ApiKeyEntity entity) {
+    private ApiKeyResponse toResponse(ApiKey entity) {
         ApiKeyResponse resp = new ApiKeyResponse();
         BeanUtils.copyProperties(entity, resp);
         if (entity.getCreatedAt() != null) {

@@ -5,7 +5,7 @@ import com.bank.ai.gateway.model.dto.request.apikey.RotateApiKeyRequest;
 import com.bank.ai.gateway.model.dto.request.apikey.UpdateApiKeyRequest;
 import com.bank.ai.gateway.model.dto.response.apikey.ApiKeyResponse;
 import com.bank.ai.gateway.model.dto.response.apikey.CreateApiKeyResponse;
-import com.bank.ai.gateway.model.entity.apikey.ApiKeyEntity;
+import com.bank.ai.gateway.model.entity.apikey.ApiKey;
 
 import java.util.List;
 
@@ -23,7 +23,7 @@ public interface ApiKeyService {
     void disable(Long userId, Long keyId);
     void enable(Long userId, Long keyId);
     CreateApiKeyResponse rotate(Long userId, Long keyId, RotateApiKeyRequest request);
-    ApiKeyEntity validate(String apiKey);
+    ApiKey validate(String apiKey);
     boolean checkQuota(Long keyId, int tokens);
     void consumeQuota(Long keyId, int tokens);
 }

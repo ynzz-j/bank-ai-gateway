@@ -3,7 +3,7 @@
 <mapper namespace="com.bank.ai.gateway.repository.apikey.ApiKeyMapper">
 
     <!-- ResultMap -->
-    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.apikey.ApiKeyEntity">
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.apikey.ApiKey">
         <id column="id" property="id"/>
         <result column="key_prefix" property="keyPrefix"/>
         <result column="key_hash" property="keyHash"/>

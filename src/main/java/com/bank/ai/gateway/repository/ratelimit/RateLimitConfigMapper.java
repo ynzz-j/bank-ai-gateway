@@ -1,7 +1,7 @@
 package com.bank.ai.gateway.repository.ratelimit;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.bank.ai.gateway.model.entity.ratelimit.RateLimitConfigEntity;
+import com.bank.ai.gateway.model.entity.ratelimit.RateLimitConfig;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-public interface RateLimitConfigMapper extends BaseMapper<RateLimitConfigEntity> {
+public interface RateLimitConfigMapper extends BaseMapper<RateLimitConfig> {
 
     /**
      * 根据维度查询配置
@@ -20,7 +20,7 @@ public interface RateLimitConfigMapper extends BaseMapper<RateLimitConfigEntity>
      * @param dimensionValue 维度值
      * @return 配置列表
      */
-    RateLimitConfigEntity findByDimension(
+    RateLimitConfig findByDimension(
             @Param("dimension") String dimension,
             @Param("dimensionValue") String dimensionValue
     );
@@ -28,5 +28,5 @@ public interface RateLimitConfigMapper extends BaseMapper<RateLimitConfigEntity>
     /**
      * 查询所有启用的配置
      */
-    List<RateLimitConfigEntity> findAllEnabled();
+    List<RateLimitConfig> findAllEnabled();
 }

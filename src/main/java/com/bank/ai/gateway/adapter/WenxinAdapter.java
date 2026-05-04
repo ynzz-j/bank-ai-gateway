@@ -31,7 +31,7 @@ import java.util.UUID;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class BaiduAdapter implements ModelAdapter {
+public class WenxinAdapter implements ModelAdapter {
 
     private final ObjectMapper objectMapper;
     private final WebClient.Builder webClientBuilder;

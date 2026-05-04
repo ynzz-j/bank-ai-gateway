@@ -59,7 +59,11 @@ public enum ErrorCode {
     API_KEY_EXPIRED_DUPLICATE(60003, "API Key 已过期"),
     API_KEY_REVOKED(60004, "API Key 已撤销"),
     API_KEY_QUOTA_NOT_ENOUGH(60005, "配额不足"),
-    API_KEY_NAME_DUPLICATE(60006, "Key名称已存在");
+    API_KEY_NAME_DUPLICATE(60006, "Key名称已存在"),
+
+    // ==================== 7xxxx 合规相关 ====================
+    COMPLIANCE_BLOCKED(70001, "内容违规被拦截"),
+    COMPLIANCE_WARNING(70002, "内容存在风险");
 
     private final int code;
     private final String message;

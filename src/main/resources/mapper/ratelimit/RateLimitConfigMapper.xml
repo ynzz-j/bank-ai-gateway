@@ -3,7 +3,7 @@
 <mapper namespace="com.bank.ai.gateway.repository.ratelimit.RateLimitConfigMapper">
 
     <!-- ResultMap -->
-    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.ratelimit.RateLimitConfigEntity">
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.ratelimit.RateLimitConfig">
         <id column="id" property="id"/>
         <result column="dimension" property="dimension"/>
         <result column="dimension_value" property="dimensionValue"/>

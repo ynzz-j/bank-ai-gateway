@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("api_keys")
-public class ApiKeyEntity {
+public class ApiKey {
 
     /** 主键ID */
     @TableId(type = IdType.AUTO)

@@ -1,6 +1,6 @@
 package com.bank.ai.gateway.service.channel;
 
-import com.bank.ai.gateway.model.entity.channel.ModelMappingEntity;
+import com.bank.ai.gateway.model.entity.channel.ModelMapping;
 import com.bank.ai.gateway.repository.channel.ModelMappingMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ public class ModelMappingService {
      * @param unifiedModel 统一模型名
      * @return 映射列表
      */
-    public List<ModelMappingEntity> getMappings(String unifiedModel) {
+    public List<ModelMapping> getMappings(String unifiedModel) {
         return modelMappingMapper.findByUnifiedModel(unifiedModel);
     }
 
@@ -41,7 +41,7 @@ public class ModelMappingService {
      * @return 实际模型名，如果未找到返回 null
      */
     public String getActualModel(String unifiedModel, String provider) {
-        ModelMappingEntity mapping = modelMappingMapper.findByUnifiedModelAndProvider(
+        ModelMapping mapping = modelMappingMapper.findByUnifiedModelAndProvider(
                 unifiedModel, provider);
         if (mapping == null) {
             log.warn("No model mapping for unifiedModel={}, provider={}", unifiedModel, provider);
@@ -55,7 +55,7 @@ public class ModelMappingService {
      *
      * @return 映射列表
      */
-    public List<ModelMappingEntity> getAllMappings() {
+    public List<ModelMapping> getAllMappings() {
         return modelMappingMapper.findAllEnabled();
     }
 

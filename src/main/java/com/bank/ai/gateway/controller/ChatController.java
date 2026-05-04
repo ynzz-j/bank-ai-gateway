@@ -3,10 +3,12 @@ package com.bank.ai.gateway.controller;
 import com.bank.ai.gateway.common.ApiResponse;
 import com.bank.ai.gateway.common.BizException;
 import com.bank.ai.gateway.common.ErrorCode;
+import com.bank.ai.gateway.compliance.ContentFilter.FilterContext;
 import com.bank.ai.gateway.model.dto.request.ChatRequest;
 import com.bank.ai.gateway.model.dto.response.ChatResponse;
-import com.bank.ai.gateway.model.entity.apikey.ApiKeyEntity;
+import com.bank.ai.gateway.model.entity.apikey.ApiKey;
 import com.bank.ai.gateway.service.ChatService;
+import com.bank.ai.gateway.service.ComplianceBlockedException;
 import com.bank.ai.gateway.service.apikey.ApiKeyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,16 +58,23 @@ public class ChatController {
             ServerHttpRequest httpRequest) {
 
         return validateApiKey(httpRequest)
-                .flatMap(userId -> {
-                    log.info("聊天补全请求: userId={}, model={}, stream={}",
-                            userId, request.getModel(), request.getStream());
+                .flatMap(apiKey -> {
+                    log.info("聊天补全请求: apiKeyId={}, model={}, stream={}\n",
+                            apiKey.getId(), request.getModel(), request.getStream());
 
-                    return chatService.chat(request)
+                    FilterContext context = createFilterContext(apiKey);
+
+                    return chatService.chat(request, context)
                             .doOnSuccess(response -> {
-                                log.info("聊天补全成功: userId={}, model={}", userId, request.getModel());
+                                log.info("聊天补全成功: apiKeyId={}, model={}", apiKey.getId(), request.getModel());
+                            })
+                            .doOnError(ComplianceBlockedException.class, e -> {
+                                log.warn("合规拦截: apiKeyId={}, violation={}", apiKey.getId(), e.getViolation());
                             })
                             .doOnError(e -> {
-                                log.error("聊天补全失败: userId={}, error={}", userId, e.getMessage());
+                                if (!(e instanceof ComplianceBlockedException)) {
+                                    log.error("聊天补全失败: apiKeyId={}, error={}", apiKey.getId(), e.getMessage());
+                                }
                             });
                 })
                 .map(ApiResponse::success);
@@ -84,19 +93,26 @@ public class ChatController {
             ServerHttpRequest httpRequest) {
 
         return validateApiKey(httpRequest)
-                .flatMapMany(userId -> {
-                    log.info("聊天补全请求（流式）: userId={}, model={}", userId, request.getModel());
+                .flatMapMany(apiKey -> {
+                    log.info("聊天补全请求（流式）: apiKeyId={}, model={}", apiKey.getId(), request.getModel());
 
                     request.setStream(true);
+                    FilterContext context = createFilterContext(apiKey);
 
-                    return chatService.chatStream(request)
+                    return chatService.chatStream(request, context)
                             .map(data -> ServerSentEvent.<String>builder()
                                     .data(data)
                                     .build())
-                            .doOnComplete(() -> log.info("聊天补全流式完成: userId={}, model={}",
-                                    userId, request.getModel()))
-                            .doOnError(e -> log.error("聊天补全流式失败: userId={}, error={}",
-                                    userId, e.getMessage()));
+                            .doOnComplete(() -> log.info("聊天补全流式完成: apiKeyId={}, model={}",
+                                    apiKey.getId(), request.getModel()))
+                            .doOnError(ComplianceBlockedException.class, e -> {
+                                log.warn("合规拦截（流式）: apiKeyId={}, violation={}", apiKey.getId(), e.getViolation());
+                            })
+                            .doOnError(e -> {
+                                if (!(e instanceof ComplianceBlockedException)) {
+                                    log.error("聊天补全流式失败: apiKeyId={}, error={}", apiKey.getId(), e.getMessage());
+                                }
+                            });
                 });
     }
 
@@ -104,9 +120,9 @@ public class ChatController {
      * 验证 API Key
      *
      * @param httpRequest HTTP 请求
-     * @return 用户ID
+     * @return API Key 实体
      */
-    private Mono<Long> validateApiKey(ServerHttpRequest httpRequest) {
+    private Mono<ApiKey> validateApiKey(ServerHttpRequest httpRequest) {
         String authHeader = httpRequest.getHeaders().getFirst("Authorization");
 
         if (authHeader == null || authHeader.isEmpty()) {
@@ -120,12 +136,12 @@ public class ChatController {
             // API Key 认证
             if (token.startsWith(API_KEY_PREFIX)) {
                 try {
-                    ApiKeyEntity apiKey = apiKeyService.validate(token);
+                    ApiKey apiKey = apiKeyService.validate(token);
                     if (!apiKey.isActive()) {
                         return Mono.error(new BizException(ErrorCode.API_KEY_DISABLED,
                                 "API Key 已禁用"));
                     }
-                    return Mono.just(apiKey.getUserId());
+                    return Mono.just(apiKey);
                 } catch (BizException e) {
                     return Mono.error(e);
                 }
@@ -137,5 +153,15 @@ public class ChatController {
         }
 
         return Mono.error(new BizException(ErrorCode.UNAUTHORIZED, "无效的认证格式"));
+    }
+
+    /**
+     * 创建合规过滤上下文
+     */
+    private FilterContext createFilterContext(ApiKey apiKey) {
+        FilterContext context = new FilterContext();
+        context.setApiKeyId(apiKey.getId());
+        context.setUserId(apiKey.getUserId());
+        return context;
     }
 }

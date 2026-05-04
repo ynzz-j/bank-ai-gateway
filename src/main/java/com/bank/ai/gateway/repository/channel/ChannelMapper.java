@@ -1,7 +1,7 @@
 package com.bank.ai.gateway.repository.channel;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.bank.ai.gateway.model.entity.channel.ChannelEntity;
+import com.bank.ai.gateway.model.entity.channel.Channel;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-public interface ChannelMapper extends BaseMapper<ChannelEntity> {
+public interface ChannelMapper extends BaseMapper<Channel> {
 
     /**
      * 查询支持指定模型的可用渠道
@@ -19,7 +19,7 @@ public interface ChannelMapper extends BaseMapper<ChannelEntity> {
      * @param modelName 模型名
      * @return 渠道列表（按优先级降序、权重降序）
      */
-    List<ChannelEntity> findAvailableByModel(@Param("modelName") String modelName);
+    List<Channel> findAvailableByModel(@Param("modelName") String modelName);
 
     /**
      * 查询指定提供商的可用渠道
@@ -27,12 +27,12 @@ public interface ChannelMapper extends BaseMapper<ChannelEntity> {
      * @param provider 提供商标识
      * @return 渠道列表
      */
-    List<ChannelEntity> findAvailableByProvider(@Param("provider") String provider);
+    List<Channel> findAvailableByProvider(@Param("provider") String provider);
 
     /**
      * 查询所有可用渠道
      *
      * @return 渠道列表
      */
-    List<ChannelEntity> findAllAvailable();
+    List<Channel> findAllAvailable();
 }

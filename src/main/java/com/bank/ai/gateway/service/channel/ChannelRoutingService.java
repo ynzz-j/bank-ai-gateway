@@ -3,8 +3,8 @@ package com.bank.ai.gateway.service.channel;
 import com.bank.ai.gateway.adapter.ModelAdapter;
 import com.bank.ai.gateway.common.BizException;
 import com.bank.ai.gateway.common.ErrorCode;
-import com.bank.ai.gateway.model.entity.channel.ChannelEntity;
-import com.bank.ai.gateway.model.entity.channel.ModelMappingEntity;
+import com.bank.ai.gateway.model.entity.channel.Channel;
+import com.bank.ai.gateway.model.entity.channel.ModelMapping;
 import com.bank.ai.gateway.repository.channel.ChannelMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class ChannelRoutingService {
      * 路由结果
      */
     public record RouteResult(
-            ChannelEntity channel,
+            Channel channel,
             ModelAdapter adapter,
             String apiKey,
             String baseUrl,
@@ -57,7 +57,7 @@ public class ChannelRoutingService {
         String explicitProvider = parsed.provider();
 
         // 2. 获取模型映射列表（用于确定可用提供商）
-        List<ModelMappingEntity> modelMappings = modelMappingService.getMappings(unifiedModel);
+        List<ModelMapping> modelMappings = modelMappingService.getMappings(unifiedModel);
 
         // 3. 如果有显式提供商前缀，直接路由到该提供商
         if (explicitProvider != null) {
@@ -65,7 +65,7 @@ public class ChannelRoutingService {
         }
 
         // 4. 查询支持该统一模型的可用渠道
-        List<ChannelEntity> channels = channelMapper.findAvailableByModel(unifiedModel);
+        List<Channel> channels = channelMapper.findAvailableByModel(unifiedModel);
 
         if (channels.isEmpty()) {
             log.warn("No available channel for model: {}", unifiedModel);
@@ -74,17 +74,17 @@ public class ChannelRoutingService {
         }
 
         // 5. 按优先级分组
-        Map<Integer, List<ChannelEntity>> priorityGroups = channels.stream()
-                .collect(Collectors.groupingBy(ChannelEntity::getPriority));
+        Map<Integer, List<Channel>> priorityGroups = channels.stream()
+                .collect(Collectors.groupingBy(Channel::getPriority));
 
         int maxPriority = priorityGroups.keySet().stream()
                 .max(Integer::compareTo)
                 .orElse(0);
 
-        List<ChannelEntity> topChannels = priorityGroups.get(maxPriority);
+        List<Channel> topChannels = priorityGroups.get(maxPriority);
 
         // 6. 按权重随机选择
-        ChannelEntity selected = selectByWeight(topChannels, modelMappings);
+        Channel selected = selectByWeight(topChannels, modelMappings);
 
         // 7. 获取适配器
         ModelAdapter adapter = getAdapterMap().get(selected.getProvider());
@@ -117,9 +117,9 @@ public class ChannelRoutingService {
      * 路由到指定提供商
      */
     private RouteResult routeToProvider(String unifiedModel, String provider,
-            List<ModelMappingEntity> modelMappings) {
+            List<ModelMapping> modelMappings) {
         // 查询该提供商的可用渠道
-        List<ChannelEntity> channels = channelMapper.findAvailableByProvider(provider);
+        List<Channel> channels = channelMapper.findAvailableByProvider(provider);
 
         if (channels.isEmpty()) {
             throw new BizException(ErrorCode.NO_AVAILABLE_CHANNEL,
@@ -127,7 +127,7 @@ public class ChannelRoutingService {
         }
 
         // 选择第一个可用渠道
-        ChannelEntity selected = channels.get(0);
+        Channel selected = channels.get(0);
 
         ModelAdapter adapter = getAdapterMap().get(provider);
         if (adapter == null) {
@@ -139,7 +139,7 @@ public class ChannelRoutingService {
         String actualModel = modelMappings.stream()
                 .filter(m -> provider.equals(m.getProvider()))
                 .findFirst()
-                .map(ModelMappingEntity::getActualModel)
+                .map(ModelMapping::getActualModel)
                 .orElse(unifiedModel);
 
         String apiKey = decryptApiKey(selected);
@@ -159,15 +159,15 @@ public class ChannelRoutingService {
     /**
      * 按权重随机选择渠道（考虑模型映射）
      */
-    private ChannelEntity selectByWeight(List<ChannelEntity> channels,
-            List<ModelMappingEntity> modelMappings) {
+    private Channel selectByWeight(List<Channel> channels,
+            List<ModelMapping> modelMappings) {
         // 过滤出有模型映射的渠道
         if (modelMappings != null && !modelMappings.isEmpty()) {
             Set<String> providersWithMapping = modelMappings.stream()
-                    .map(ModelMappingEntity::getProvider)
+                    .map(ModelMapping::getProvider)
                     .collect(Collectors.toSet());
 
-            List<ChannelEntity> filteredChannels = channels.stream()
+            List<Channel> filteredChannels = channels.stream()
                     .filter(c -> providersWithMapping.contains(c.getProvider()))
                     .toList();
 
@@ -191,7 +191,7 @@ public class ChannelRoutingService {
         int randomValue = random.nextInt(totalWeight);
         int cumulative = 0;
 
-        for (ChannelEntity channel : channels) {
+        for (Channel channel : channels) {
             int weight = channel.getWeight() != null ? channel.getWeight() : 1;
             cumulative += weight;
             if (randomValue < cumulative) {
@@ -206,12 +206,12 @@ public class ChannelRoutingService {
      * 获取实际模型名
      */
     private String getActualModel(String unifiedModel, String provider,
-            List<ModelMappingEntity> modelMappings) {
+            List<ModelMapping> modelMappings) {
         // 从模型映射中获取
         if (modelMappings != null) {
             Optional<String> mapped = modelMappings.stream()
                     .filter(m -> provider.equals(m.getProvider()))
-                    .map(ModelMappingEntity::getActualModel)
+                    .map(ModelMapping::getActualModel)
                     .findFirst();
             if (mapped.isPresent()) {
                 return mapped.get();
@@ -238,7 +238,7 @@ public class ChannelRoutingService {
      *
      * <p>TODO: 接入 KMS 服务解密
      */
-    private String decryptApiKey(ChannelEntity channel) {
+    private String decryptApiKey(Channel channel) {
         // TODO: 使用 KMS 解密
         // 目前返回明文（开发阶段）
         return channel.getApiKeyEncrypted();
@@ -250,9 +250,9 @@ public class ChannelRoutingService {
      * @param channelId 渠道ID
      */
     public void markCircuitOpen(Long channelId) {
-        ChannelEntity entity = new ChannelEntity();
+        Channel entity = new Channel();
         entity.setId(channelId);
-        entity.setStatus((short) ChannelEntity.Status.CIRCUIT_OPEN.getCode());
+        entity.setStatus((short) Channel.Status.CIRCUIT_OPEN.getCode());
         channelMapper.updateById(entity);
         log.warn("Channel {} marked as circuit open", channelId);
     }
@@ -263,9 +263,9 @@ public class ChannelRoutingService {
      * @param channelId 渠道ID
      */
     public void markRecovered(Long channelId) {
-        ChannelEntity entity = new ChannelEntity();
+        Channel entity = new Channel();
         entity.setId(channelId);
-        entity.setStatus((short) ChannelEntity.Status.ENABLED.getCode());
+        entity.setStatus((short) Channel.Status.ENABLED.getCode());
         channelMapper.updateById(entity);
         log.info("Channel {} recovered", channelId);
     }
