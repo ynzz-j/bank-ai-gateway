@@ -1,14 +1,12 @@
-# 开发环境配置
-# 启动命令: mvn spring-boot:run -Dspring-boot.run.profiles=dev
-
+# 开发环境配置（使用已有数据库）
 server:
   port: 8080
 
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/bank_ai_gateway
-    username: postgres
-    password: postgres123
+    username: bank_gateway
+    password: Bank@Gateway2026
 
   data:
     redis:
@@ -16,26 +14,19 @@ spring:
       port: 6379
       password: redis123
 
-# JWT - 开发环境使用固定密钥（仅开发用！）
 jwt:
-  secret: dev-secret-key-for-development-only-must-be-at-least-256-bits-long
+  secret: dev-secret-key-for-development-only-must-be-at-least-256-bits-long-for-hs256
 
-# KMS - 开发环境使用本地模式
 kms:
   type: local
   local:
     key: dev-kms-key-32-bytes-long-abcdef01
 
-# 日志级别 - 开发环境更详细
 logging:
   level:
     root: INFO
     com.bank.ai.gateway: DEBUG
-    org.springframework.web: DEBUG
-    org.springframework.data.redis: DEBUG
-    io.github.resilience4j: DEBUG
 
-# Actuator - 开发环境开放更多端点
 management:
   endpoints:
     web:
