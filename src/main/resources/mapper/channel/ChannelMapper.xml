@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bank.ai.gateway.repository.channel.ChannelMapper">
+
+    <!-- ResultMap -->
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.channel.ChannelEntity">
+        <id column="id" property="id"/>
+        <result column="provider" property="provider"/>
+        <result column="name" property="name"/>
+        <result column="base_url" property="baseUrl"/>
+        <result column="api_key" property="apiKey"/>
+        <result column="priority" property="priority"/>
+        <result column="weight" property="weight"/>
+        <result column="models" property="models"/>
+        <result column="status" property="status"/>
+        <result column="config" property="config"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, provider, name, base_url, api_key, priority, weight,
+        models, status, config, created_at, updated_at
+    </sql>
+
+    <!-- 查询支持指定模型的可用渠道 -->
+    <select id="findAvailableByModel" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM channels
+        WHERE status = 1
+          AND models LIKE CONCAT('%', #{modelName}, '%')
+        ORDER BY priority DESC, weight DESC
+    </select>
+
+    <!-- 查询指定提供商的可用渠道 -->
+    <select id="findAvailableByProvider" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM channels
+        WHERE status = 1 AND provider = #{provider}
+        ORDER BY priority DESC, weight DESC
+    </select>
+
+    <!-- 查询所有可用渠道 -->
+    <select id="findAllAvailable" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM channels
+        WHERE status = 1
+        ORDER BY priority DESC, weight DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bank.ai.gateway.repository.channel.ModelMappingMapper">
+
+    <!-- ResultMap -->
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.channel.ModelMappingEntity">
+        <id column="id" property="id"/>
+        <result column="unified_model" property="unifiedModel"/>
+        <result column="provider" property="provider"/>
+        <result column="channel_model" property="channelModel"/>
+        <result column="priority" property="priority"/>
+        <result column="enabled" property="enabled"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, unified_model, provider, channel_model, priority, enabled, created_at, updated_at
+    </sql>
+
+    <!-- 根据统一模型名查询所有启用的映射 -->
+    <select id="findByUnifiedModel" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM model_mapping
+        WHERE unified_model = #{unifiedModel}
+          AND enabled = 1
+        ORDER BY priority ASC, id ASC
+    </select>
+
+    <!-- 根据统一模型名和提供商查询映射 -->
+    <select id="findByUnifiedModelAndProvider" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM model_mapping
+        WHERE unified_model = #{unifiedModel}
+          AND provider = #{provider}
+          AND enabled = 1
+        LIMIT 1
+    </select>
+
+    <!-- 查询所有启用的映射 -->
+    <select id="findAllEnabled" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM model_mapping
+        WHERE enabled = 1
+        ORDER BY unified_model, priority
+    </select>
+
+</mapper>

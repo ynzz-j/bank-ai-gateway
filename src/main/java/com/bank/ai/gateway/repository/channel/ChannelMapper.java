@@ -1,10 +1,8 @@
 package com.bank.ai.gateway.repository.channel;
 
-import com.bank.ai.gateway.model.entity.channel.ChannelEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.apache.ibatis.annotations.Mapper;
+import com.bank.ai.gateway.model.entity.channel.ChannelEntity;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -13,7 +11,6 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-@Mapper
 public interface ChannelMapper extends BaseMapper<ChannelEntity> {
 
     /**
@@ -22,12 +19,6 @@ public interface ChannelMapper extends BaseMapper<ChannelEntity> {
      * @param modelName 模型名
      * @return 渠道列表（按优先级降序、权重降序）
      */
-    @Select("""
-        SELECT * FROM channels
-        WHERE status = 1
-          AND models LIKE CONCAT('%', #{modelName}, '%')
-        ORDER BY priority DESC, weight DESC
-        """)
     List<ChannelEntity> findAvailableByModel(@Param("modelName") String modelName);
 
     /**
@@ -36,11 +27,6 @@ public interface ChannelMapper extends BaseMapper<ChannelEntity> {
      * @param provider 提供商标识
      * @return 渠道列表
      */
-    @Select("""
-        SELECT * FROM channels
-        WHERE status = 1 AND provider = #{provider}
-        ORDER BY priority DESC, weight DESC
-        """)
     List<ChannelEntity> findAvailableByProvider(@Param("provider") String provider);
 
     /**
@@ -48,10 +34,5 @@ public interface ChannelMapper extends BaseMapper<ChannelEntity> {
      *
      * @return 渠道列表
      */
-    @Select("""
-        SELECT * FROM channels
-        WHERE status = 1
-        ORDER BY priority DESC, weight DESC
-        """)
     List<ChannelEntity> findAllAvailable();
 }
