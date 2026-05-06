@@ -60,17 +60,29 @@ public interface ContentFilter {
      */
     class FilterContext {
         private Long apiKeyId;
+        private String apiKeyName;
         private Long userId;
         private Long callLogId;
         private String model;
+        private String clientIp;
+        private String userAgent;
+        private String requestId;
 
         public Long getApiKeyId() { return apiKeyId; }
         public void setApiKeyId(Long apiKeyId) { this.apiKeyId = apiKeyId; }
+        public String getApiKeyName() { return apiKeyName; }
+        public void setApiKeyName(String apiKeyName) { this.apiKeyName = apiKeyName; }
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
         public Long getCallLogId() { return callLogId; }
         public void setCallLogId(Long callLogId) { this.callLogId = callLogId; }
         public String getModel() { return model; }
         public void setModel(String model) { this.model = model; }
+        public String getClientIp() { return clientIp; }
+        public void setClientIp(String clientIp) { this.clientIp = clientIp; }
+        public String getUserAgent() { return userAgent; }
+        public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
+        public String getRequestId() { return requestId; }
+        public void setRequestId(String requestId) { this.requestId = requestId; }
     }
 }

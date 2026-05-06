@@ -48,10 +48,13 @@ public enum ErrorCode {
     MODEL_RATE_LIMIT(40003, "模型限流触发"),
 
     // ==================== 5xxxx 系统相关 ====================
-    INTERNAL_ERROR(50000, "系统内部错误"),
-    PARAM_INVALID(50001, "参数校验失败"),
-    DATABASE_ERROR(50002, "数据库错误"),
-    REDIS_ERROR(50003, "Redis 错误"),
+    NOT_FOUND(50000, "资源不存在"),
+    BAD_REQUEST(50001, "请求参数错误"),
+    SYSTEM_ERROR(50002, "系统内部错误"),
+    INTERNAL_ERROR(50003, "系统内部错误"),
+    PARAM_INVALID(50004, "参数校验失败"),
+    DATABASE_ERROR(50005, "数据库错误"),
+    REDIS_ERROR(50006, "Redis 错误"),
 
     // ==================== 6xxxx API Key管理 ====================
     API_KEY_NOT_FOUND(60001, "API Key 不存在"),

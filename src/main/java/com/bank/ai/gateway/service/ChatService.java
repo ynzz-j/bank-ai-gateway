@@ -3,6 +3,7 @@ package com.bank.ai.gateway.service;
 import com.bank.ai.gateway.compliance.ContentFilter.FilterResult;
 import com.bank.ai.gateway.model.dto.request.ChatRequest;
 import com.bank.ai.gateway.model.dto.response.ChatResponse;
+import com.bank.ai.gateway.model.entity.CallLog;
 import com.bank.ai.gateway.service.channel.ChannelRoutingService;
 import com.bank.ai.gateway.service.circuitbreaker.CircuitBreakerService;
 import com.bank.ai.gateway.service.circuitbreaker.CircuitBreakerService.CircuitBreakerException;
@@ -43,6 +44,7 @@ public class ChatService {
     private final CircuitBreakerService circuitBreakerService;
     private final TimeLimiterRegistry timeLimiterRegistry;
     private final ComplianceService complianceService;
+    private final CallLogService callLogService;
 
     // 超时配置
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(60);
@@ -56,6 +58,11 @@ public class ChatService {
      * @return 响应
      */
     public Mono<ChatResponse> chat(ChatRequest request, FilterContext context) {
+        // 生成请求ID
+        String requestId = callLogService.generateRequestId();
+        context.setRequestId(requestId);
+        long startTime = System.currentTimeMillis();
+
         // 1. 入参合规过滤
         String inputContent = extractContent(request);
         return complianceService.filterInput(inputContent, context)
@@ -83,6 +90,16 @@ public class ChatService {
                             if (!(e instanceof CircuitBreakerException)) {
                                 log.error("Chat request failed for model {}: {}", request.getModel(), e.getMessage());
                             }
+                        // 3. 记录调用日志（错误）
+                        }).doOnError(e -> {
+                            long latencyMs = System.currentTimeMillis() - startTime;
+                            CallLog errorLog = callLogService.buildErrorLog(
+                                    requestId, context.getApiKeyId(), context.getApiKeyName(), context.getUserId(),
+                                    request, route,
+                                    "CHAT_ERROR", e.getMessage(), latencyMs,
+                                    context.getClientIp(), context.getUserAgent()
+                            );
+                            callLogService.writeLogAsync(errorLog);
                         });
 
                     } catch (Exception e) {
@@ -90,7 +107,7 @@ public class ChatService {
                         return Mono.error(e);
                     }
                 })
-                // 3. 出参合规过滤
+                // 4. 出参合规过滤
                 .flatMap(response -> {
                     String outputContent = extractOutputContent(response);
                     return complianceService.filterOutput(outputContent, context)
@@ -101,6 +118,21 @@ public class ChatService {
                                 }
                                 return response;
                             });
+                })
+                // 5. 记录调用日志（成功）
+                .doOnSuccess(response -> {
+                    long latencyMs = System.currentTimeMillis() - startTime;
+                    try {
+                        ChannelRoutingService.RouteResult route = routingService.route(request.getModel());
+                        CallLog callLog = callLogService.buildCallLog(
+                                requestId, context.getApiKeyId(), context.getApiKeyName(), context.getUserId(),
+                                request, route, response, latencyMs,
+                                context.getClientIp(), context.getUserAgent()
+                        );
+                        callLogService.writeLogAsync(callLog);
+                    } catch (Exception e) {
+                        log.warn("Failed to build call log: {}", e.getMessage());
+                    }
                 });
     }
 
@@ -112,6 +144,12 @@ public class ChatService {
      * @return SSE 数据流
      */
     public Flux<String> chatStream(ChatRequest request, FilterContext context) {
+        // 生成请求ID
+        String requestId = callLogService.generateRequestId();
+        context.setRequestId(requestId);
+        long startTime = System.currentTimeMillis();
+        final StringBuilder outputBuilder = new StringBuilder();
+
         // 1. 入参合规过滤
         String inputContent = extractContent(request);
         return complianceService.filterInput(inputContent, context)
@@ -135,17 +173,51 @@ public class ChatService {
                                         // 流式合规过滤：逐块检测
                                         .flatMap(chunk -> complianceService.filterStreamChunk(chunk, context)
                                                 .map(result -> result.passed() ? chunk : "[内容已过滤]"))
+                                        // 收集输出内容用于日志
+                                        .doOnNext(outputBuilder::append)
                         ).doOnError(CircuitBreakerException.class, e -> {
                             log.warn("Circuit breaker open for channel {}: {}", channelName, e.getMessage());
                         }).doOnError(e -> {
                             if (!(e instanceof CircuitBreakerException)) {
                                 log.error("Stream request failed for model {}: {}", request.getModel(), e.getMessage());
                             }
+                            // 记录错误日志
+                            long latencyMs = System.currentTimeMillis() - startTime;
+                            CallLog errorLog = callLogService.buildErrorLog(
+                                    requestId, context.getApiKeyId(), context.getApiKeyName(), context.getUserId(),
+                                    request, route,
+                                    "STREAM_ERROR", e.getMessage(), latencyMs,
+                                    context.getClientIp(), context.getUserAgent()
+                            );
+                            callLogService.writeLogAsync(errorLog);
                         });
 
                     } catch (Exception e) {
                         log.error("Route failed for model {}: {}", request.getModel(), e.getMessage());
                         return Flux.error(e);
+                    }
+                })
+                // 3. 流完成后记录日志
+                .doOnComplete(() -> {
+                    long latencyMs = System.currentTimeMillis() - startTime;
+                    try {
+                        ChannelRoutingService.RouteResult route = routingService.route(request.getModel());
+                        // 流式响应构建简化的日志
+                        CallLog callLog = callLogService.buildCallLog(
+                                requestId, context.getApiKeyId(), context.getApiKeyName(), context.getUserId(),
+                                request, route, null, latencyMs,
+                                context.getClientIp(), context.getUserAgent()
+                        );
+                        // 补充输出内容
+                        String outputContent = outputBuilder.toString();
+                        if (!outputContent.isEmpty()) {
+                            callLog.setOutputContent(outputContent.length() > 2000
+                                    ? outputContent.substring(0, 2000) + "...[truncated]"
+                                    : outputContent);
+                        }
+                        callLogService.writeLogAsync(callLog);
+                    } catch (Exception e) {
+                        log.warn("Failed to build call log for stream: {}", e.getMessage());
                     }
                 });
     }

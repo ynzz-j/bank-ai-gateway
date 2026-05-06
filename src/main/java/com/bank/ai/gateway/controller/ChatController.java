@@ -62,7 +62,7 @@ public class ChatController {
                     log.info("聊天补全请求: apiKeyId={}, model={}, stream={}\n",
                             apiKey.getId(), request.getModel(), request.getStream());
 
-                    FilterContext context = createFilterContext(apiKey);
+                    FilterContext context = createFilterContext(apiKey, httpRequest);
 
                     return chatService.chat(request, context)
                             .doOnSuccess(response -> {
@@ -97,7 +97,7 @@ public class ChatController {
                     log.info("聊天补全请求（流式）: apiKeyId={}, model={}", apiKey.getId(), request.getModel());
 
                     request.setStream(true);
-                    FilterContext context = createFilterContext(apiKey);
+                    FilterContext context = createFilterContext(apiKey, httpRequest);
 
                     return chatService.chatStream(request, context)
                             .map(data -> ServerSentEvent.<String>builder()
@@ -155,13 +155,44 @@ public class ChatController {
         return Mono.error(new BizException(ErrorCode.UNAUTHORIZED, "无效的认证格式"));
     }
 
+    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
+    private static final String X_REAL_IP = "X-Real-IP";
+    private static final String USER_AGENT = "User-Agent";
+
     /**
      * 创建合规过滤上下文
      */
-    private FilterContext createFilterContext(ApiKey apiKey) {
+    private FilterContext createFilterContext(ApiKey apiKey, ServerHttpRequest request) {
         FilterContext context = new FilterContext();
         context.setApiKeyId(apiKey.getId());
+        context.setApiKeyName(apiKey.getName());
         context.setUserId(apiKey.getUserId());
+        context.setClientIp(getClientIp(request));
+        context.setUserAgent(request.getHeaders().getFirst(USER_AGENT));
         return context;
+    }
+
+    /**
+     * 获取客户端真实 IP
+     * 支持代理转发场景下的真实 IP 获取
+     */
+    private String getClientIp(ServerHttpRequest request) {
+        // 优先从 X-Forwarded-For 获取
+        String forwardedFor = request.getHeaders().getFirst(X_FORWARDED_FOR);
+        if (forwardedFor != null && !forwardedFor.isEmpty()) {
+            // 多个IP时取第一个（真实客户端IP）
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        // 次优先 X-Real-IP
+        String realIp = request.getHeaders().getFirst(X_REAL_IP);
+        if (realIp != null && !realIp.isEmpty()) {
+            return realIp.trim();
+        }
+
+        // 回退到直接连接的 IP
+        return request.getRemoteAddress() != null
+                ? request.getRemoteAddress().getAddress().getHostAddress()
+                : "unknown";
     }
 }
