@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bank.ai.gateway.repository.ChannelMapper">
+
+    <resultMap id="ChannelResultMap" type="com.bank.ai.gateway.model.entity.channel.Channel">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="provider" property="provider"/>
+        <result column="base_url" property="baseUrl"/>
+        <result column="api_key_encrypted" property="apiKeyEncrypted"/>
+        <result column="api_key_nonce" property="apiKeyNonce"/>
+        <result column="api_key_kms_version" property="apiKeyKmsVersion"/>
+        <result column="models" property="models"/>
+        <result column="priority" property="priority"/>
+        <result column="weight" property="weight"/>
+        <result column="status" property="status"/>
+        <result column="last_health_check" property="lastHealthCheck"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, name, provider, base_url, api_key_encrypted, api_key_nonce, api_key_kms_version,
+        models, priority, weight, status, last_health_check, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.bank.ai.gateway.model.entity.channel.Channel"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO channels (
+            name, provider, base_url, api_key_encrypted, api_key_nonce, api_key_kms_version,
+            models, priority, weight, status, last_health_check, created_at, updated_at
+        ) VALUES (
+            #{name}, #{provider}, #{baseUrl}, #{apiKeyEncrypted}, #{apiKeyNonce}, #{apiKeyKmsVersion},
+            #{models}, #{priority}, #{weight}, #{status}, #{lastHealthCheck}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.bank.ai.gateway.model.entity.channel.Channel">
+        UPDATE channels SET
+            name = #{name},
+            base_url = #{baseUrl},
+            api_key_encrypted = #{apiKeyEncrypted},
+            api_key_nonce = #{apiKeyNonce},
+            api_key_kms_version = #{apiKeyKmsVersion},
+            models = #{models},
+            priority = #{priority},
+            weight = #{weight},
+            status = #{status},
+            last_health_check = #{lastHealthCheck},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM channels WHERE id = #{id}
+    </delete>
+
+    <select id="findById" resultMap="ChannelResultMap">
+        SELECT <include refid="baseColumns"/> FROM channels WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="ChannelResultMap">
+        SELECT <include refid="baseColumns"/> FROM channels ORDER BY priority DESC, weight DESC
+    </select>
+
+    <select id="selectByProvider" resultMap="ChannelResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM channels
+        WHERE provider = #{provider}
+        ORDER BY priority DESC, weight DESC
+    </select>
+
+    <select id="selectEnabled" resultMap="ChannelResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM channels
+        WHERE status = 1
+        ORDER BY priority DESC, weight DESC
+    </select>
+
+    <select id="selectPage" resultMap="ChannelResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM channels
+        <where>
+            <if test="provider != null and provider != ''">AND provider = #{provider}</if>
+            <if test="status != null">AND status = #{status}</if>
+        </where>
+        ORDER BY priority DESC, weight DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM channels
+        <where>
+            <if test="provider != null and provider != ''">AND provider = #{provider}</if>
+            <if test="status != null">AND status = #{status}</if>
+        </where>
+    </select>
+
+</mapper>

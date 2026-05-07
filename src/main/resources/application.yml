@@ -11,8 +11,8 @@ spring:
   # 数据源配置（占位，具体环境覆盖）
   datasource:
     url: jdbc:postgresql://localhost:5432/bank_ai_gateway
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    username: ${DB_USERNAME:rag_admin}
+    password: ${DB_PASSWORD:RAG@2026#pg}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20

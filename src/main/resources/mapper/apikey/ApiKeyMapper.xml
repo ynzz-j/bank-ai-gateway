@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bank.ai.gateway.repository.apikey.ApiKeyMapper">
+
+    <!-- ResultMap -->
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.apikey.ApiKey">
+        <id column="id" property="id"/>
+        <result column="key_prefix" property="keyPrefix"/>
+        <result column="key_hash" property="keyHash"/>
+        <result column="user_id" property="userId"/>
+        <result column="name" property="name"/>
+        <result column="quota_rpm" property="quotaRpm"/>
+        <result column="quota_tpm" property="quotaTpm"/>
+        <result column="quota_total" property="quotaTotal"/>
+        <result column="used_quota" property="usedQuota"/>
+        <result column="status" property="status"/>
+        <result column="expires_at" property="expiresAt"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, key_prefix, key_hash, user_id, name, quota_rpm, quota_tpm,
+        quota_total, used_quota, status, expires_at, created_at, updated_at
+    </sql>
+
+    <!-- 按前缀+哈希查询 -->
+    <select id="selectByPrefixAndHash" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM api_keys
+        WHERE key_prefix = #{keyPrefix}
+          AND key_hash = #{keyHash}
+          AND status = 1
+    </select>
+
+    <!-- 按前缀查询所有匹配的Key -->
+    <select id="selectByPrefix" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM api_keys
+        WHERE key_prefix = #{keyPrefix}
+          AND status != 2
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bank.ai.gateway.repository.compliance.SensitiveWordMapper">
+
+    <resultMap id="BaseResultMap" type="com.bank.ai.gateway.model.entity.SensitiveWord">
+        <id column="id" property="id"/>
+        <result column="word" property="word"/>
+        <result column="category" property="category"/>
+        <result column="action" property="action"/>
+        <result column="enabled" property="enabled"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, word, category, action, enabled, created_by, created_at, updated_at
+    </sql>
+
+    <select id="selectAllEnabled" resultMap="BaseResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM sensitive_words
+        WHERE enabled = 1
+        ORDER BY category, word
+    </select>
+
+    <select id="selectByCategory" resultMap="BaseResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM sensitive_words
+        WHERE category = #{category} AND enabled = 1
+        ORDER BY word
+    </select>
+
+    <insert id="insert" parameterType="com.bank.ai.gateway.model.entity.SensitiveWord">
+        INSERT INTO sensitive_words (word, category, action, enabled, created_by, created_at, updated_at)
+        VALUES (#{word}, #{category}, #{action}, #{enabled}, #{createdBy}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO sensitive_words (word, category, action, enabled, created_by, created_at, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.word}, #{item.category}, #{item.action}, #{item.enabled}, #{item.createdBy}, #{item.createdAt}, #{item.updatedAt})
+        </foreach>
+    </insert>
+
+    <update id="updateEnabled">
+        UPDATE sensitive_words
+        SET enabled = #{enabled}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sensitive_words WHERE id = #{id}
+    </delete>
+
+</mapper>
